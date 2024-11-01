@@ -16,14 +16,14 @@ CLR_BLACK = (0,0,0)
 CLR_RED = (255, 0, 0)
 CLR_GREEN = (0, 255, 0)
 
-WAVE_DELAY = 60 * 4 # num seconds per wave
+WAVE_DELAY = 60 * 3 # num seconds per wave
 BOOST_DELAY = 60 * 12
 
+DEBUG = False
 
 waveNum = 1
 waveSpeed = 3
-
-
+highscore = 1
 
 class Bullet:
     def __init__(self, x, y, angle, speed):
@@ -126,9 +126,15 @@ def RefreshWindow():
         player.draw(WIN)
         WIN.blit(UI_FONT.render("Boost: {} | {}".format(player.boostAmmount, player.boostTimer / 100), True, CLR_WHITE), (5,5))
     
-    text = UI_FONT.render("Bullet count: {}".format(len(bullets)), True, CLR_WHITE)
+    if DEBUG:
+        text = UI_FONT.render("Bullet count: {}".format(len(bullets)), True, CLR_WHITE)
+        size = text.get_size()
+        WIN.blit(text, (WIN_WIDTH - 5 - size[0] ,5))
+    
+    text = UI_FONT.render("{} | {}".format(waveNum, highscore), True, CLR_WHITE)
     size = text.get_size()
-    WIN.blit(text, (WIN_WIDTH - 5 - size[0] ,5))
+    
+    WIN.blit(text, (WIN_WIDTH / 2 - size[0] / 2 ,5))
 
     pyg.display.update()
 
@@ -215,13 +221,15 @@ def BulletLogic():
             if  len(players) == 0: GameOver()
 
 def WaveLogic():
-    global waveSpeed, NextWaveFrameCounter
+    global waveSpeed, NextWaveFrameCounter, waveNum, highscore
     
     NextWaveFrameCounter -= 1
     if NextWaveFrameCounter == 0:
         NextWaveFrameCounter = WAVE_DELAY
         Wave(waveSpeed)
         waveSpeed += .5
+        waveNum += 1
+        if waveNum > highscore: highscore = waveNum
 
 def BoostLogic():
     global NextBoostFrameCounter

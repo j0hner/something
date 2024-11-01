@@ -17,7 +17,7 @@ CLR_RED = (255, 0, 0)
 CLR_GREEN = (0, 255, 0)
 
 WAVE_DELAY = 60 * 3 # num seconds per wave
-BOOST_DELAY = 60 * 12
+BOOST_DELAY = 60 * 3
 
 DEBUG = False
 
@@ -75,7 +75,7 @@ class Player:
         self.controlls = contrtrolls
         self.isBoosted = False
         self.boostTimer = 0
-        self.boostAmmount = 0
+        self.boostAmmount = 10
     
     def draw(self, surface):
         color: tuple[int]
@@ -88,8 +88,7 @@ class Player:
         return pyg.Rect((self.x - self.radius, self.y - self.radius),(self.radius * 2, self.radius * 2))
     
     def move(self,keysPressed):
-        if self.isBoosted: self.velocity = 8
-        else: self.velocity = 5
+        if not self.isBoosted: self.velocity = 5
         
         move_x = keysPressed[self.controlls[3]] - keysPressed[self.controlls[2]]
         move_y = keysPressed[self.controlls[1]] - keysPressed[self.controlls[0]]
@@ -107,6 +106,7 @@ class Player:
     def boost(self):
         self.boostTimer = 60 * 10
         self.isBoosted = True
+        self.velocity += 3
 
 PLAYERS: list[Player] = [Player([pyg.K_UP, pyg.K_DOWN, pyg.K_LEFT, pyg.K_RIGHT, pyg.K_LSHIFT], "player 1")]
 players: list[Player] = PLAYERS.copy()
@@ -140,7 +140,7 @@ def RefreshWindow():
 
 def GameOver():
     WIN.fill(CLR_RED)
-    text = GAME_OVER_FONT.render("GAME OVER - CLICK TO RESTART",True,CLR_WHITE)
+    text = GAME_OVER_FONT.render("GAME OVER - SPACE TO RESTART",True,CLR_WHITE)
     size = text.get_size()
     WIN.blit(text, (WIN_WIDTH//2 - size[0]//2, WIN_HEIGHT//2 - size[1]//2))
     pyg.display.update()
@@ -164,7 +164,7 @@ def Reset():
     
 def Wave(speed:float):
     num = rng.randint(0,6)
-    print(num)
+    if DEBUG: print(num)
     match (num):
         case 0: # wall L > R
             gapPos = rng.randint(0,40)
@@ -260,12 +260,12 @@ def Game():
                 case pyg.QUIT:
                     running = False
                 case pyg.KEYDOWN:
+                    if event.key == pyg.K_ESCAPE: pyg.quit()
+                    if event.key == pyg.K_SPACE and len(players) == 0: Reset()
                     for player in players:
                         if event.key == player.controlls[4] and player.boostAmmount > 0:
                             player.boostAmmount -= 1
                             player.boost()
-                case pyg.MOUSEBUTTONDOWN:
-                    if len(players) == 0: Reset()
                     
         WaveLogic()
         BoostLogic()

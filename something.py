@@ -25,6 +25,11 @@ waveNum = 1
 waveSpeed = 3
 highscore = 1
 
+emptyIcon = pyg.Surface((1,1))
+emptyIcon.fill(CLR_WHITE)
+pyg.display.set_icon(emptyIcon)
+pyg.display.set_caption("")
+
 class Bullet:
     def __init__(self, x, y, angle, speed):
         self.x = x
@@ -163,7 +168,7 @@ def Reset():
     Game()
     
 def Wave(speed:float):
-    num = rng.randint(0,6)
+    num = rng.randint(0,8)
     if DEBUG: print(num)
     match (num):
         case 0: # wall L > R
@@ -191,13 +196,18 @@ def Wave(speed:float):
         case 4: # center spread
             for i in range(0, 360, 20):
                 bullets.append(Bullet(WIN_WIDTH/2, WIN_HEIGHT/2, i, speed/3))
-        case 5:
-            for i in range(0, 90, 10):
+        case 5:  # spread from upper-left corner
+            for i in range(-45, 90, 10):
                 bullets.append(Bullet(5, 5, i, speed / 3))
-        case 6:
-            for i in range(-180,-90, 10):
-                bullets.append(Bullet(WIN_WIDTH - 5, WIN_HEIGHT - 5, i, speed/3))
-
+        case 6:  # spread from bottom-right corner
+            for i in range(-180, -45, 10):
+                bullets.append(Bullet(WIN_WIDTH - 5, WIN_HEIGHT - 5, i, speed / 3))
+        case 7:  # spread from top-right corner
+            for i in range(90, 225, 10):
+                bullets.append(Bullet(WIN_WIDTH - 5, 5, i, speed / 3))
+        case 8:  # spread from bottom-left corner
+            for i in range(-90, 45, 10):
+                bullets.append(Bullet(5, WIN_HEIGHT - 5, i, speed / 3))
 def BulletLogic():
     bullets_to_remove = []
     players_to_remove = []
@@ -286,7 +296,6 @@ def Game():
             
             if len(players) > 0: RefreshWindow()
         clock.tick(target_fps)
-    
 
 if __name__ == "__main__":
     main()

@@ -34,79 +34,68 @@ emptyIcon.fill(CLR_WHITE)
 pyg.display.set_icon(emptyIcon)
 pyg.display.set_caption("")
 
-class Bullet:
-    def __init__(self, x, y, angle, speed):
+
+class GameObject:
+    def __init__(self, x, y, radius):
         self.x = x
         self.y = y
+        self.radius = radius
+    
+    def getRect(self) -> pyg.Rect:
+        return pyg.Rect((self.x - self.radius, self.y - self.radius), (self.radius * 2, self.radius * 2))
+    
+    def draw(self, surface, color):
+        pyg.draw.circle(surface, color, (int(self.x), int(self.y)), int(self.radius))
+        
+    def hit(self, collisionRect):
+        return self.getRect().colliderect(collisionRect)
+
+class Bullet(GameObject):
+    def __init__(self, x, y, angle, speed):
+        super().__init__(x, y, 5)
         self.angle = angle
         self.speed = speed
-        self.radius = 5
         
         angle_radians = math.radians(angle)
         self.dx = math.cos(angle_radians) * speed
         self.dy = math.sin(angle_radians) * speed
 
-    def move(self):
-        
+    def move(self):    
         self.x += self.dx
         self.y += self.dy
 
     def draw(self, surface):
-        pyg.draw.circle(surface, CLR_RED, (int(self.x), int(self.y)), self.radius)
+        super().draw(surface, CLR_RED)
 
     def is_off_screen(self) -> bool:
         return self.x < self.radius or self.x > WIN_WIDTH or self.y < self.radius or self.y > WIN_HEIGHT
-    
-    def getRect(self) -> pyg.Rect:
-        return pyg.Rect((self.x - self.radius, self.y - self.radius),(self.radius * 2, self.radius * 2))
-    
-    def hit(self, player_rect):
-        bullet_rect = pyg.Rect(self.x - self.radius, self.y - self.radius, self.radius * 2, self.radius * 2)
-        return bullet_rect.colliderect(player_rect)
 
-class Boost:
-    def __init__(self, x, y) -> None:
-        self.x = x
-        self.y = y
-        self.radius = 7.5
-    
+class Boost(GameObject):
+    def __init__(self, x, y):
+        super().__init__(x, y, 7.5)
+
     def draw(self, surface):
-        pyg.draw.circle(surface,CLR_GREEN, (self.x, self.y), self.radius)
-    
-    def getRect(self) -> pyg.Rect:
-        return pyg.Rect((self.x - self.radius, self.y - self.radius),(self.radius * 2, self.radius * 2))
-    
-    def hit(self, player_rect):
-        boost_rect = pyg.Rect(self.x - self.radius, self.y - self.radius, self.radius * 2, self.radius * 2)
-        return boost_rect.colliderect(player_rect)
+        super().draw(surface, CLR_GREEN)
 
-class Player:
-    def __init__(self, contrtrolls: list[int], name:str) -> None:
-        self.radius = 10
-        # self.isAlive = True
+class Player(GameObject):
+    def __init__(self, controls: list[int], name: str):
+        super().__init__(WIN_WIDTH / 2, WIN_HEIGHT / 2, 10)
         self.velocity = 5
-        self.x = WIN_WIDTH / 2 - self.radius
-        self.y = WIN_HEIGHT / 2 - self.radius
-        self.controlls = contrtrolls
+        self.controls = controls
         self.isBoosted = False
         self.boostTimer = 0
-        self.boostAmmount = 10
+        self.boostAmmount = 0
     
     def draw(self, surface):
-        color: tuple[int]
-        if self.isBoosted: color = CLR_GREEN
-        else: color = CLR_WHITE
+        color = CLR_GREEN if self.isBoosted else CLR_WHITE
+        super().draw(surface, color)
         
-        pyg.draw.circle(surface, color, (self.x, self.y), self.radius)
-        
-    def getRect(self) -> pyg.Rect:
-        return pyg.Rect((self.x - self.radius, self.y - self.radius),(self.radius * 2, self.radius * 2))
-    
-    def move(self,keysPressed):
-        if not self.isBoosted: self.velocity = 5
-        
-        move_x = keysPressed[self.controlls[3]] - keysPressed[self.controlls[2]]
-        move_y = keysPressed[self.controlls[1]] - keysPressed[self.controlls[0]]
+    def move(self, keysPressed):
+        if not self.isBoosted:
+            self.velocity = 5
+
+        move_x = keysPressed[self.controls[3]] - keysPressed[self.controls[2]]
+        move_y = keysPressed[self.controls[1]] - keysPressed[self.controls[0]]
         
         if move_x != 0 and move_y != 0:
             move_x *= self.velocity / math.sqrt(2)
@@ -115,8 +104,8 @@ class Player:
             move_x *= self.velocity
             move_y *= self.velocity
 
-        self.x = min(max(0, self.x + move_x), WIN_WIDTH - self.radius)
-        self.y = min(max(0, self.y + move_y), WIN_HEIGHT - self.radius)
+        self.x = min(max(0, self.x + move_x), WIN_WIDTH)
+        self.y = min(max(0, self.y + move_y), WIN_HEIGHT)
     
     def boost(self):
         self.boostTimer = 60 * 10
@@ -182,6 +171,8 @@ def Reset():
         player.isBoosted = False
         player.boostTimer = 0
         player.boostAmmount = 0
+        player.x = WIN_WIDTH / 2
+        player.y = WIN_HEIGHT / 2
     
     RefreshWindow()
 
@@ -228,6 +219,7 @@ def Wave(speed:float):
         case 8:  # spread from bottom-left corner
             for i in range(-90, 45, 10):
                 bullets.append(Bullet(5, WIN_HEIGHT - 5, i, speed / 3))
+
 def BulletLogic():
     bullets_to_remove = []
     players_to_remove = []
@@ -271,8 +263,6 @@ def BoostLogic():
 
 def main():
     global NextWaveFrameCounter, NextBoostFrameCounter, clock, target_fps
-
-    # bullets.append(Bullet(30,30,0,0))
     
     NextWaveFrameCounter = WAVE_DELAY
     NextBoostFrameCounter = BOOST_DELAY
@@ -292,11 +282,11 @@ def Game():
                 case pyg.QUIT:
                     running = False
                 case pyg.KEYDOWN:
-                    if event.key == pyg.K_DELETE: pyg.quit()
+                    if event.key == pyg.K_DELETE: return
                     if event.key == pyg.K_ESCAPE: isPaused = not isPaused
                     if event.key == pyg.K_SPACE and len(players) == 0: Reset()
                     for player in players:
-                        if event.key == player.controlls[4] and player.boostAmmount > 0:
+                        if event.key == player.controls[4] and player.boostAmmount > 0:
                             player.boostAmmount -= 1
                             player.boost()
         if not isPaused:            

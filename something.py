@@ -8,13 +8,15 @@ WIN_WIDTH = 1000
 WIN_HEIGHT = 500
 WIN = pyg.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
 
-GAME_OVER_FONT = pyg.font.SysFont("consolas", 30)
-UI_FONT = pyg.font.SysFont("consolas", 20)
+BIG_FONT = pyg.font.SysFont("consolas", 30)
+SMALL_FONT = pyg.font.SysFont("consolas", 20)
 
 CLR_WHITE = (255,255,255)
 CLR_BLACK = (0,0,0)
 CLR_RED = (255, 0, 0)
 CLR_GREEN = (0, 255, 0)
+CLR_BLUE = (0, 0, 255)
+CLR_GRAY = (60, 60, 60)
 
 WAVE_DELAY = 60 * 3 # num seconds per wave
 BOOST_DELAY = 60 * 3
@@ -24,6 +26,8 @@ DEBUG = False
 waveNum = 1
 waveSpeed = 3
 highscore = 1
+
+isPaused = False
 
 emptyIcon = pyg.Surface((1,1))
 emptyIcon.fill(CLR_WHITE)
@@ -53,6 +57,9 @@ class Bullet:
     def is_off_screen(self) -> bool:
         return self.x < self.radius or self.x > WIN_WIDTH or self.y < self.radius or self.y > WIN_HEIGHT
     
+    def getRect(self) -> pyg.Rect:
+        return pyg.Rect((self.x - self.radius, self.y - self.radius),(self.radius * 2, self.radius * 2))
+    
     def hit(self, player_rect):
         bullet_rect = pyg.Rect(self.x - self.radius, self.y - self.radius, self.radius * 2, self.radius * 2)
         return bullet_rect.colliderect(player_rect)
@@ -65,6 +72,9 @@ class Boost:
     
     def draw(self, surface):
         pyg.draw.circle(surface,CLR_GREEN, (self.x, self.y), self.radius)
+    
+    def getRect(self) -> pyg.Rect:
+        return pyg.Rect((self.x - self.radius, self.y - self.radius),(self.radius * 2, self.radius * 2))
     
     def hit(self, player_rect):
         boost_rect = pyg.Rect(self.x - self.radius, self.y - self.radius, self.radius * 2, self.radius * 2)
@@ -120,32 +130,42 @@ boosts:list[Boost] = []
 
 def RefreshWindow():
     WIN.fill(CLR_BLACK)
-
     for bullet in bullets:
         bullet.draw(WIN)
+        if DEBUG: pyg.draw.rect(WIN, CLR_BLUE, bullet.getRect(), 1)
     
     for boost in boosts:
         boost.draw(WIN)
+        if DEBUG: pyg.draw.rect(WIN, CLR_BLUE, boost.getRect(), 1)
     
     for player in players:
         player.draw(WIN)
-        WIN.blit(UI_FONT.render("Boost: {} | {}".format(player.boostAmmount, player.boostTimer / 100), True, CLR_WHITE), (5,5))
+        if DEBUG: pyg.draw.rect(WIN, CLR_BLUE, player.getRect(), 1)
+        WIN.blit(SMALL_FONT.render("Boost: {} | {}".format(player.boostAmmount, player.boostTimer / 100), True, CLR_WHITE), (5,5))
     
     if DEBUG:
-        text = UI_FONT.render("Bullet count: {}".format(len(bullets)), True, CLR_WHITE)
+        text = SMALL_FONT.render("Bullet count: {}".format(len(bullets)), True, CLR_WHITE)
         size = text.get_size()
         WIN.blit(text, (WIN_WIDTH - 5 - size[0] ,5))
     
-    text = UI_FONT.render("{} | {}".format(waveNum, highscore), True, CLR_WHITE)
+    text = SMALL_FONT.render("{} | {}".format(waveNum, highscore), True, CLR_WHITE)
     size = text.get_size()
     
     WIN.blit(text, (WIN_WIDTH / 2 - size[0] / 2 ,5))
+    
+    if isPaused: 
+        pauseOverlay = pyg.Surface((WIN_WIDTH,WIN_HEIGHT))
+        pauseOverlay.set_alpha(128)
+        pauseOverlay.fill(CLR_GRAY)
+        pauseText = BIG_FONT.render("PAUSED", True, CLR_WHITE)
+        pauseOverlay.blit(pauseText,(WIN_WIDTH/2 - pauseText.get_size()[0]/2, WIN_HEIGHT / 2 - pauseText.get_size()[1] / 2))
+        WIN.blit(pauseOverlay, (0,0))
 
     pyg.display.update()
 
 def GameOver():
     WIN.fill(CLR_RED)
-    text = GAME_OVER_FONT.render("GAME OVER - SPACE TO RESTART",True,CLR_WHITE)
+    text = BIG_FONT.render("GAME OVER - SPACE TO RESTART",True,CLR_WHITE)
     size = text.get_size()
     WIN.blit(text, (WIN_WIDTH//2 - size[0]//2, WIN_HEIGHT//2 - size[1]//2))
     pyg.display.update()
@@ -262,6 +282,8 @@ def main():
     Game()
     
 def Game():
+    global isPaused
+    
     running = True
     while running:    
         
@@ -270,31 +292,32 @@ def Game():
                 case pyg.QUIT:
                     running = False
                 case pyg.KEYDOWN:
-                    if event.key == pyg.K_ESCAPE: pyg.quit()
+                    if event.key == pyg.K_DELETE: pyg.quit()
+                    if event.key == pyg.K_ESCAPE: isPaused = not isPaused
                     if event.key == pyg.K_SPACE and len(players) == 0: Reset()
                     for player in players:
                         if event.key == player.controlls[4] and player.boostAmmount > 0:
                             player.boostAmmount -= 1
                             player.boost()
-                    
-        WaveLogic()
-        BoostLogic()
+        if not isPaused:            
+            WaveLogic()
+            BoostLogic()
 
-        if len(players) > 0: 
-            for player in players:
-                player.move(pyg.key.get_pressed())
-                if player.boostTimer != 0: player.boostTimer -= 1
-                else: player.isBoosted = False
-                
-            for boost in boosts:
+            if len(players) > 0: 
                 for player in players:
-                    if boost.hit(player.getRect()):
-                        boosts.remove(boost)
-                        player.boostAmmount += 1
-            
-            BulletLogic()
-            
-            if len(players) > 0: RefreshWindow()
+                    player.move(pyg.key.get_pressed())
+                    if player.boostTimer != 0: player.boostTimer -= 1
+                    else: player.isBoosted = False
+                    
+                for boost in boosts:
+                    for player in players:
+                        if boost.hit(player.getRect()):
+                            boosts.remove(boost)
+                            player.boostAmmount += 1
+                
+                BulletLogic()
+                
+        if len(players) > 0: RefreshWindow()
         clock.tick(target_fps)
 
 if __name__ == "__main__":

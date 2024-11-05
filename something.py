@@ -1,4 +1,7 @@
 import pygame as pyg
+import subprocess
+import sys
+import os
 import math
 import random as rng
 
@@ -362,8 +365,12 @@ def BoostLogic():
 
 def EraserLogic(): ...
 
+
 def main():
     global NextWaveFrameCounter, NextBoostFrameCounter, clock, targetFps
+
+    if not is_package_installed("pygame"):
+        os.system("pip install pygame")
 
     NextWaveFrameCounter = WAVE_DELAY
     NextBoostFrameCounter = BOOST_DELAY
@@ -422,6 +429,14 @@ def Game():
                             boostCount -= 1
                             player.boostAmmount += 1
 
+
+def is_package_installed(package_name):
+    try:
+        # Check if package is installed using pip
+        subprocess.check_call([sys.executable, '-m', 'pip', 'show', package_name])
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 if __name__ == "__main__":
     main()

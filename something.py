@@ -1,9 +1,20 @@
-import pygame as pyg
-import subprocess
+from tkinter import Tk, messagebox
 import sys
 import os
 import math
 import random as rng
+
+try:
+    import pygame as pyg
+except ImportError:
+    root = Tk()
+    root.withdraw()
+    if messagebox.askokcancel("Pygame not installed", "install pygame?"):
+        os.system("pip install pygame")
+    else:
+        sys.exit()
+    
+import pygame as pyg
 
 pyg.init()
 
@@ -92,7 +103,6 @@ class Eraser(GameObject):
             return super().hit(collisionRect)
         return False
 
-
 class Bullet(GameObject):
     def __init__(self, x, y, angle, speed):
         super().__init__(x, y, 5, CLR_RED)
@@ -114,7 +124,6 @@ class Bullet(GameObject):
             or self.y < self.radius
             or self.y > WIN_HEIGHT
         )
-
 
 class Boost(GameObject):
     def __init__(self, x, y):
@@ -159,7 +168,7 @@ class Player(GameObject):
 
 
 PLAYERS: list[Player] = [
-    Player([pyg.K_UP, pyg.K_DOWN, pyg.K_LEFT, pyg.K_RIGHT, pyg.K_LSHIFT], "player 1")
+    Player([pyg.K_w, pyg.K_s, pyg.K_a, pyg.K_d, pyg.K_LSHIFT], "player 1")
 ]
 
 gameObjects: list[GameObject] = []
@@ -369,9 +378,6 @@ def EraserLogic(): ...
 def main():
     global NextWaveFrameCounter, NextBoostFrameCounter, clock, targetFps
 
-    if not is_package_installed("pygame"):
-        os.system("pip install pygame")
-
     NextWaveFrameCounter = WAVE_DELAY
     NextBoostFrameCounter = BOOST_DELAY
     clock = pyg.time.Clock()
@@ -428,15 +434,6 @@ def Game():
                             gameObjects.remove(boost)
                             boostCount -= 1
                             player.boostAmmount += 1
-
-
-def is_package_installed(package_name):
-    try:
-        # Check if package is installed using pip
-        subprocess.check_call([sys.executable, '-m', 'pip', 'show', package_name])
-        return True
-    except subprocess.CalledProcessError:
-        return False
 
 if __name__ == "__main__":
     main()

@@ -74,7 +74,6 @@ class GameObject:
     def hit(self, collisionRect):
         return self.getRect().colliderect(collisionRect)
 
-
 class Eraser(GameObject):
     def __init__(self, x, y, radius):
         super().__init__(x, y, radius)
@@ -129,7 +128,6 @@ class Boost(GameObject):
     def __init__(self, x, y):
         super().__init__(x, y, 7.5, CLR_GREEN)
 
-
 class Player(GameObject):
     def __init__(self, controls: list[int], name: str):
         self.color = CLR_WHITE
@@ -174,6 +172,19 @@ PLAYERS: list[Player] = [
 gameObjects: list[GameObject] = []
 gameObjects.append(*PLAYERS.copy())
 playerCount = len(PLAYERS)
+
+def SaveHiScore():
+    with open("save.bin", "w+") as f:
+        f.write(bin(highscore))
+
+def LoadHiScore():
+    global highscore
+    
+    try:
+        with open("save.bin", "r") as f:
+            highscore = int(f.read(), 2)
+    except FileNotFoundError:
+        highscore = 0
 
 def RefreshWindow():
     WIN.fill(CLR_BLACK)
@@ -220,14 +231,12 @@ def RefreshWindow():
 
     pyg.display.update()
 
-
 def GameOver():
     WIN.fill(CLR_RED)
     text = BIG_FONT.render("GAME OVER - SPACE TO RESTART", True, CLR_WHITE)
     size = text.get_size()
     WIN.blit(text, (WIN_WIDTH // 2 - size[0] // 2, WIN_HEIGHT // 2 - size[1] // 2))
     pyg.display.update()
-
 
 def Reset():
     global waveNum, waveSpeed, playerCount
@@ -248,7 +257,6 @@ def Reset():
     RefreshWindow()
 
     Game()
-
 
 def Wave(speed: float):
     global bulletCount
@@ -348,7 +356,6 @@ def BulletLogic():
         if playerCount == 0:
             GameOver()
 
-
 def WaveLogic():
     global waveSpeed, NextWaveFrameCounter, waveNum, highscore
 
@@ -360,7 +367,7 @@ def WaveLogic():
         waveNum += 1
         if waveNum > highscore:
             highscore = waveNum
-
+        SaveHiScore()
 
 def BoostLogic():
     global NextBoostFrameCounter
@@ -371,20 +378,18 @@ def BoostLogic():
         boost = Boost(rng.randint(30, WIN_WIDTH - 30), rng.randint(30, WIN_HEIGHT - 30))
         gameObjects.append(boost)
 
-
 def EraserLogic(): ...
-
 
 def main():
     global NextWaveFrameCounter, NextBoostFrameCounter, clock, targetFps
 
+    LoadHiScore()
     NextWaveFrameCounter = WAVE_DELAY
     NextBoostFrameCounter = BOOST_DELAY
     clock = pyg.time.Clock()
     targetFps = 60
     RefreshWindow()
     Game()
-
 
 def Game():
     global isPaused, boostCount

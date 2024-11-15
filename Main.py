@@ -7,13 +7,6 @@ import os
 import math
 import random as rng
 
-from Entity import Entity
-from Eraser import Eraser
-from Player import Player
-from Bullet import Bullet
-from Boost import Boost
-from Constatns import *
-
 try:
     import pygame as pyg
 except ImportError:
@@ -25,6 +18,13 @@ except ImportError:
         sys.exit()
     
 import pygame as pyg
+
+from Entity import Entity
+from Eraser import Eraser
+from Player import Player
+from Bullet import Bullet
+from Boost import Boost
+from Constatns import *
 
 pyg.init()
 

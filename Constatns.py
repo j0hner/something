@@ -5,8 +5,8 @@ WIN_HEIGHT = 500
 WIN = pyg.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
 
 pyg.font.init()
-BIG_FONT = pyg.font.SysFont("consolas", 30)
-SMALL_FONT = pyg.font.SysFont("consolas", 20)
+BIG_FONT = pyg.font.Font("PressStart2P-Regular.ttf", 30)
+SMALL_FONT = pyg.font.Font("PressStart2P-Regular.ttf", 15)
 
 CLR_WHITE = (255, 255, 255)
 CLR_BLACK = (0, 0, 0)
